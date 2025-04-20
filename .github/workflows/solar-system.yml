@@ -59,6 +59,37 @@ jobs:
             path: coverage
             retention-days: 5
 
+    docker:
+        name: Docker Build and Push
+        needs: [unit-testing,code-coverage]
+        runs-on: ubuntu-latest
+        container:
+          image: node:20
+          options: --user node
+        permissions:
+          packages: write
+        steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
+
+        - name: Setup Docker Buildx
+          uses: docker/setup-buildx-action@v4
+
+        - name: Login to Docker Registry
+          uses: docker/login-action@v4
+          with:
+            registry: ghcr.io
+            username: '${{ github.repository_owner }}'
+            password: '${{ secrets.GITHUB_TOKEN }}'
+
+        - name: Build and Push Docker Image
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: true
+            tags: ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}'
+            cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/solar-system:cache
+
     dev-deploy:
       needs: docker
       runs-on: ubuntu-latest
